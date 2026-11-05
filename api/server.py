@@ -10,7 +10,7 @@ import uuid
 import asyncio
 import uvicorn
 from pathlib import Path
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles as FastAPIStaticFiles
@@ -25,10 +25,22 @@ sys.path.insert(0, str(project_root))
 
 # Import agent runner and monitor
 # 注意：agent.main_agent 导入时会初始化 main_agent，这可能需要几秒钟
-from agent.main_agent import run_deep_agent
+from agent.main_agent import create_main_agent, run_deep_agent
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from contextlib import asynccontextmanager
 from api.monitor import manager
 
-app = FastAPI(title="DeepAgents API")
+checkpoint_db_path = project_root / "data" / "checkpoints.db"
+checkpoint_db_path.parent.mkdir(parents=True, exist_ok=True)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with AsyncSqliteSaver.from_conn_string(str(checkpoint_db_path)) as checkpointer:
+        await checkpointer.setup()
+        app.state.agent = create_main_agent(checkpointer)
+        yield
+
+app = FastAPI(title="DeepAgents API", lifespan=lifespan)
 
 # 挂载输出目录，以便前端访问生成的静态文件
 # 假设输出目录位于项目根目录下的 output
@@ -79,15 +91,9 @@ async def startup_event():
 
 
 @app.post("/api/task")
-async def run_task(request: TaskRequest):
-    # 1. [ID 初始化]
+async def run_task(request: TaskRequest, fastapi_request: Request):
     thread_id = request.thread_id or str(uuid.uuid4())
-
-    # 2. [后台执行] 异步运行 Agent，不阻塞主线程
-    # 注意：这里简单的使用 asyncio.create_task 触发，由 main_agent 内部负责实时推送
-    asyncio.create_task(run_deep_agent(request.query, thread_id))
-
-    # 3. [立即响应]
+    asyncio.create_task(run_deep_agent(fastapi_request.app.state.agent, request.query, thread_id))
     return {"status": "started", "thread_id": thread_id}
 
 
