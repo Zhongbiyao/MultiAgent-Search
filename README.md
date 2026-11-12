@@ -15,11 +15,9 @@
 本项目旨在打造一个**数字实习生**，将繁琐的信息搬运、SQL 查询与框架套用自动化，让分析师将精力集中在最终的价值判断上。
 
 ## 🎥 2. 演示与效果预览
-
-> *(这里留给你插入视频和截图)*
 > *   **📺 视频演示**：
-[![行业研究助手演示demo](<img width="1917" height="957" alt="微信图片_20261112164112_164_1" src="https://github.com/user-attachments/assets/0bdf72d6-47c2-482e-87e6-166bd179fc1a" />
-)](https://www.bilibili.com/video/BV1VeWX6PEWf/?vd_source=9f68ea1d0f97b2bcf7ee99aca55df09e)
+[![行业研究助手演示demo](https://github.com/user-attachments/assets/0bdf72d6-47c2-482e-87e6-166bd179fc1a)](https://www.bilibili.com/video/BV1VeWX6PEWf/?vd_source=9f68ea1d0f97b2bcf7ee99aca55df09e)
+
 
 
 ## ✨ 3. 核心功能
