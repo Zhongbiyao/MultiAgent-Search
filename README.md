@@ -17,12 +17,10 @@
 ## 🎥 2. 演示与效果预览
 
 > *(这里留给你插入视频和截图)*
-> *   **📺 视频演示**：*(建议用 ScreenToGif 或 B站录制一段 2 分钟的视频，展示：输入指令 ➔ 观察左侧 Agent 思考与工具调用日志 ➔ 右侧文件面板刷出并下载报告)*
-[![行业研究助手演示demo](这里填你的封面图片链接)](https://www.bilibili.com/video/BV1VeWX6PEWf/?vd_source=9f68ea1d0f97b2bcf7ee99aca55df09e)
+> *   **📺 视频演示**：
+[![行业研究助手演示demo](<img width="1917" height="957" alt="微信图片_20261112164112_164_1" src="https://github.com/user-attachments/assets/0bdf72d6-47c2-482e-87e6-166bd179fc1a" />
+)](https://www.bilibili.com/video/BV1VeWX6PEWf/?vd_source=9f68ea1d0f97b2bcf7ee99aca55df09e)
 
-> *   **📸 界面截图**：
->     *(插入图 1：左侧展示 Agent 按顺序调用了 `internet_search`、`execute_sql_query` 和 `create_ask_delete`)*
->     *(插入图 2：右侧文件面板生成了漂亮的 PDF 报告)*
 
 ## ✨ 3. 核心功能
 
@@ -34,7 +32,8 @@
 
 ## 🏗️ 4. 系统架构设计
 
-*(💡 强烈建议你在 Draw.io 画一个简单的架构图贴在这里)*
+<img width="2637" height="1029" alt="exported_image" src="https://github.com/user-attachments/assets/35727e45-c98f-4f0c-936d-9faadfd0644c" />
+
 
 系统采用 **“1 个主控 Agent + 3 个异构子 Agent + 1 套文档生成工具链”** 的架构：
 
