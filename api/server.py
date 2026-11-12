@@ -37,6 +37,7 @@ checkpoint_db_path.parent.mkdir(parents=True, exist_ok=True)
 async def lifespan(app: FastAPI):
     async with AsyncSqliteSaver.from_conn_string(str(checkpoint_db_path)) as checkpointer:
         await checkpointer.setup()
+        manager.set_loop(asyncio.get_running_loop())
         app.state.agent = create_main_agent(checkpointer)
         yield
 
@@ -78,17 +79,6 @@ app.add_middleware(
 class TaskRequest(BaseModel):
     query: str
     thread_id: str = None
-
-@app.on_event("startup")
-async def startup_event():
-    """
-    服务启动时，获取当前运行的事件循环，并绑定到 WebSocket 管理器。
-    确保后台线程能通过 run_coroutine_threadsafe 准确投递消息。
-    """
-    loop = asyncio.get_running_loop()
-    manager.set_loop(loop)
-    print(f"[Server] WebSocket Manager bound to loop: {id(loop)}")
-
 
 @app.post("/api/task")
 async def run_task(request: TaskRequest, fastapi_request: Request):

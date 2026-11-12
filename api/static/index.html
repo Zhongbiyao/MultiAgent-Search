@@ -4,187 +4,212 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MultiAgent-Search — 电商运营智能分析</title>
+<!-- 引入轻量级 markdown 渲染库用于预览 -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* 主题变量：默认柔和暗色 */
   :root {
-    --bg: #0f1117; --panel: #161822; --border: #252836; --text: #e1e4ed;
-    --text-dim: #7b8198; --accent: #6366f1; --accent-glow: rgba(99,102,241,.18);
-    --green: #22c55e; --green-bg: rgba(34,197,94,.12);
-    --blue: #3b82f6; --blue-bg: rgba(59,130,246,.12);
-    --orange: #f59e0b; --orange-bg: rgba(245,158,11,.12);
-    --red: #ef4444; --red-bg: rgba(239,68,68,.12);
-    --purple: #a855f7; --purple-bg: rgba(168,85,247,.12);
-    --radius: 10px;
+    --bg: #1a1d27; --panel: #222736; --panel-hover: #2a3042; --border: #343b50;
+    --text: #e2e6f0; --text-dim: #94a0b8; --accent: #6366f1; --accent-hover: #7c7ff5;
+    --accent-glow: rgba(99,102,241,.25); --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+    --radius: 8px; --shadow: 0 4px 20px rgba(0,0,0,.2);
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+
+  /* 浅色主题覆盖 */
+  html[data-theme="light"] {
+    --bg: #f3f4f6; --panel: #ffffff; --panel-hover: #f9fafb; --border: #e5e7eb;
+    --text: #1f2937; --text-dim: #6b7280; --accent-glow: rgba(99,102,241,.15);
+    --shadow: 0 4px 20px rgba(0,0,0,.05);
   }
 
   body {
     font-family: var(--font); background: var(--bg); color: var(--text);
-    height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-size: 13px;
+    transition: background .3s, color .3s;
   }
 
-  /* ── header ── */
+  /* ── Header ── */
   header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    padding: 12px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--panel);
   }
-  header h1 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+  header h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
   header h1 span { color: var(--accent); }
+  .header-right { display: flex; gap: 12px; align-items: center; }
   .ws-badge {
     display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim);
-    background: var(--panel); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--bg); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
   }
-  .ws-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-  .ws-dot.off { background: var(--red); }
+  .ws-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 8px var(--green); }
+  .ws-dot.off { background: var(--red); box-shadow: 0 0 8px var(--red); }
 
-  /* ── input bar ── */
+  /* ── Input Bar ── */
   .input-bar {
-    display: flex; gap: 10px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    display: flex; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--panel);
+    position: relative; z-index: 10;
   }
+  .input-wrapper { flex: 1; position: relative; }
   .input-bar input {
-    flex: 1; padding: 11px 14px; font-size: 14px; font-family: var(--font);
+    width: 100%; padding: 12px 16px; font-size: 14px; font-family: var(--font);
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .input-bar input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .input-bar input::placeholder { color: var(--text-dim); opacity: .6; }
+
+  /* 历史记录下拉 */
+  .history-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px;
     background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
-    color: var(--text); outline: none; transition: border-color .2s;
+    box-shadow: var(--shadow); display: none; max-height: 200px; overflow-y: auto; z-index: 100;
   }
-  .input-bar input:focus { border-color: var(--accent); }
-  .input-bar input::placeholder { color: #4a5070; }
+  .history-item { padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-dim); }
+  .history-item:hover { background: var(--panel-hover); color: var(--text); }
+
   .btn {
-    padding: 10px 18px; font-size: 13px; font-weight: 600; font-family: var(--font);
-    border: none; border-radius: var(--radius); cursor: pointer;
-    white-space: nowrap; transition: all .15s;
+    padding: 10px 20px; font-size: 13px; font-weight: 600; font-family: var(--font);
+    border: none; border-radius: var(--radius); cursor: pointer; white-space: nowrap; transition: all .15s;
   }
+  .btn:active { transform: scale(0.97); }
   .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { box-shadow: 0 0 16px var(--accent-glow); }
-  .btn-primary:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
-  .btn-ghost {
-    background: transparent; color: var(--text-dim); border: 1px solid var(--border);
-    font-weight: 500;
-  }
-  .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
-  .btn-ghost.active { color: var(--text); border-color: var(--accent); background: rgba(99,102,241,.08); }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 16px var(--accent-glow); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); background: var(--panel-hover); }
 
-  /* ── tab bar ── */
-  .tab-bar {
-    display: flex; align-items: center; gap: 4px; padding: 0 20px;
-    border-bottom: 1px solid var(--border); flex-shrink: 0;
-    overflow-x: auto; min-height: 42px;
-  }
+  /* ── Tab Bar ── */
+  .tab-bar { display: flex; padding: 0 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; background: var(--panel); }
   .tab {
-    display: flex; align-items: center; gap: 7px;
-    padding: 8px 14px; font-size: 13px; color: var(--text-dim);
-    border-radius: 8px 8px 0 0; cursor: pointer; white-space: nowrap;
-    transition: all .15s; border: 1px solid transparent;
-    user-select: none; flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 13px; color: var(--text-dim);
+    border-radius: var(--radius) var(--radius) 0 0; cursor: pointer; border: 1px solid transparent;
+    border-bottom: none; margin-top: 6px; flex-shrink: 0; transition: all .2s;
   }
-  .tab:hover { color: var(--text); background: rgba(255,255,255,.03); }
-  .tab.active {
-    color: var(--text); background: var(--panel);
-    border-color: var(--border); border-bottom-color: var(--panel);
-    margin-bottom: -1px;
-  }
-  .tab .tab-query { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
-  .tab .tab-status { font-size: 11px; }
-  .tab .tab-status.running { color: var(--blue); }
-  .tab .tab-status.done { color: var(--green); }
-  .tab .tab-status.error { color: var(--red); }
-  .tab .tab-close {
-    width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center;
-    justify-content: center; font-size: 14px; color: var(--text-dim);
-    transition: all .1s; margin-left: 2px;
-  }
-  .tab .tab-close:hover { background: rgba(255,255,255,.1); color: var(--text); }
+  .tab:hover { color: var(--text); background: var(--panel-hover); }
+  .tab.active { color: var(--text); background: var(--bg); border-color: var(--border); font-weight: 600; }
+  .tab-query { max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tab-close { padding: 2px 6px; border-radius: 4px; font-size: 14px; line-height: 1; margin-left: 4px; }
+  .tab-close:hover { background: rgba(239,68,68,.2); color: var(--red); }
 
-  /* ── main content ── */
-  .main-area {
-    flex: 1; display: flex; overflow: hidden;
+  /* 进度 mini */
+  .tab-progress { font-size: 11px; color: var(--orange); display: flex; align-items: center; gap: 4px; }
+  .spinner {
+    width: 12px; height: 12px; border: 2px solid rgba(245,158,11,.3); border-top-color: var(--orange);
+    border-radius: 50%; animation: spin 1s linear infinite;
   }
-  .log-panel {
-    flex: 1; display: flex; flex-direction: column; min-width: 0;
-  }
-  .log-scroll {
-    flex: 1; overflow-y: auto; padding: 10px 20px;
-  }
-  .empty-state {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 100%; color: var(--text-dim); font-size: 13px; text-align: center; gap: 8px;
-  }
-  .empty-state .icon { font-size: 36px; opacity: .3; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── log entries ── */
+  /* ── Main Area ── */
+  .main-area { flex: 1; display: flex; overflow: hidden; }
+  .log-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+  
+  /* 步骤状态卡片 */
+  .step-tracker {
+    padding: 16px 24px; background: var(--panel); border-bottom: 1px solid var(--border);
+    display: flex; gap: 24px; flex-wrap: wrap; flex-shrink: 0;
+  }
+  .step-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
+  .step-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; }
+  .step-item.done { color: var(--text); }
+  .step-item.done .step-icon { background: rgba(16,185,129,.15); color: var(--green); }
+  .step-item.active { color: var(--text); font-weight: 600; }
+  .step-item.active .step-icon { background: rgba(245,158,11,.15); color: var(--orange); border: 1px solid var(--orange); }
+  .step-item.wait .step-icon { background: var(--bg); border: 1px solid var(--border); }
+  .step-item.error .step-icon { background: rgba(239,68,68,.15); color: var(--red); }
+
+  /* 日志区 */
+  .log-scroll { flex: 1; overflow-y: auto; padding: 16px 24px; scroll-behavior: smooth; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-dim); font-size: 14px; gap: 12px; }
+  .empty-state .icon { font-size: 48px; opacity: .5; }
+  
   .log-entry {
-    display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(37,40,54,.4);
-    font-size: 13px; line-height: 1.5; animation: fadeIn .2s ease;
+    display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px; line-height: 1.6; animation: fadeIn .3s ease;
   }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-  .log-dot {
-    width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0;
-  }
-  .log-dot.s { background: var(--orange); box-shadow: 0 0 5px rgba(245,158,11,.5); }
-  .log-dot.a { background: var(--blue); box-shadow: 0 0 5px rgba(59,130,246,.5); }
-  .log-dot.t { background: var(--green); box-shadow: 0 0 5px rgba(34,197,94,.5); }
-  .log-dot.r { background: var(--purple); box-shadow: 0 0 5px rgba(168,85,247,.5); }
-  .log-dot.e { background: var(--red); box-shadow: 0 0 5px rgba(239,68,68,.5); }
+  
   .log-body { flex: 1; min-width: 0; }
-  .log-tag {
-    display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
-    text-transform: uppercase; letter-spacing: .5px; margin-right: 6px; vertical-align: middle;
-  }
-  .log-tag.s { color: var(--orange); background: var(--orange-bg); }
-  .log-tag.a { color: var(--blue); background: var(--blue-bg); }
-  .log-tag.t { color: var(--green); background: var(--green-bg); }
-  .log-tag.r { color: var(--purple); background: var(--purple-bg); }
-  .log-tag.e { color: var(--red); background: var(--red-bg); }
+  .log-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .log-tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .log-tag.s { color: var(--orange); background: rgba(245,158,11,.15); }
+  .log-tag.a { color: var(--accent); background: rgba(99,102,241,.15); }
+  .log-tag.t { color: var(--text-dim); background: var(--panel-hover); }
+  .log-tag.r { color: var(--green); background: rgba(16,185,129,.15); }
+  .log-tag.e { color: var(--red); background: rgba(239,68,68,.15); }
+  .log-time { font-size: 12px; color: var(--text-dim); margin-left: auto; }
   .log-msg { color: var(--text); word-break: break-word; }
-  .log-time { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
-  .log-result-block {
-    margin-top: 4px; padding: 8px 10px; background: var(--bg); border-radius: 5px;
-    border-left: 3px solid var(--purple); font-size: 12px; line-height: 1.6;
-    max-height: 160px; overflow-y: auto; color: var(--text-dim); white-space: pre-wrap;
-  }
+  
+  /* 折叠面板 */
+  .log-details { margin-top: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .log-summary { padding: 8px 12px; font-size: 12px; cursor: pointer; color: var(--text-dim); user-select: none; display: flex; justify-content: space-between; }
+  .log-summary:hover { background: var(--panel-hover); }
+  .log-result-content { padding: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); white-space: pre-wrap; max-height: 250px; overflow-y: auto; }
 
-  /* ── file panel ── */
-  .file-panel {
-    width: 300px; flex-shrink: 0; display: flex; flex-direction: column;
-    border-left: 1px solid var(--border); background: var(--panel);
-  }
-  .file-panel-header {
-    padding: 12px 16px; border-bottom: 1px solid var(--border);
-    font-size: 12px; font-weight: 600; color: var(--text-dim);
-    text-transform: uppercase; letter-spacing: .8px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .file-list { flex: 1; overflow-y: auto; padding: 8px 10px; }
-  .file-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 10px; border-radius: 7px; cursor: pointer;
-    transition: background .12s; margin-bottom: 2px;
-  }
-  .file-item:hover { background: rgba(255,255,255,.04); }
-  .file-icon { font-size: 18px; flex-shrink: 0; }
+  /* ── File Panel (可拖拽) ── */
+  .resizer { width: 4px; cursor: col-resize; background: transparent; transition: background .2s; z-index: 10; }
+  .resizer:hover, .resizer.is-dragging { background: var(--accent); }
+  
+  .file-panel { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--panel); min-width: 220px; max-width: 600px; }
+  .file-panel-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .file-search { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); outline: none; font-size: 12px; margin-top: 8px; }
+  .file-list { flex: 1; overflow-y: auto; padding: 12px; }
+  
+  .file-group-title { font-size: 12px; color: var(--text-dim); padding: 8px 4px; font-weight: 600; letter-spacing: .5px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .file-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--radius); cursor: pointer; border: 1px solid transparent; transition: all .2s; margin-bottom: 6px; background: var(--bg); }
+  .file-item:hover { border-color: var(--border); box-shadow: var(--shadow); }
+  .file-icon { font-size: 20px; }
   .file-info { flex: 1; min-width: 0; }
-  .file-name { font-size: 12px; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
   .file-meta { font-size: 11px; color: var(--text-dim); }
-  .file-item .btn { padding: 4px 10px; font-size: 11px; border-radius: 5px; }
 
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  /* ── 模态框 & Toast ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+    display: none; justify-content: center; align-items: center; z-index: 1000;
+  }
+  .modal-content {
+    background: var(--panel); width: 80%; max-width: 900px; height: 80vh; border-radius: var(--radius);
+    display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.3); border: 1px solid var(--border);
+  }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+  .modal-body { flex: 1; overflow-y: auto; padding: 24px; font-size: 14px; line-height: 1.7; }
+  .modal-body h1, .modal-body h2, .modal-body h3 { margin: 16px 0 8px; }
+  .modal-body p { margin-bottom: 12px; }
+  .modal-body pre { background: var(--bg); padding: 12px; border-radius: var(--radius); overflow-x: auto; border: 1px solid var(--border); }
+
+  #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 2000; pointer-events: none; }
+  .toast { background: var(--panel); color: var(--text); padding: 12px 24px; border-radius: 30px; font-size: 13px; border: 1px solid var(--border); box-shadow: var(--shadow); animation: slideUp .3s ease; display: flex; align-items: center; gap: 8px; }
+  .toast.error { border-color: var(--red); color: var(--red); }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 </style>
 </head>
 <body>
 
 <header>
   <h1>🤖 MultiAgent <span>Search</span></h1>
-  <div class="ws-badge">
-    <div class="ws-dot" id="wsDot"></div>
-    <span id="wsStatus">就绪</span>
+  <div class="header-right">
+    <button class="btn btn-ghost" onclick="toggleTheme()" id="themeBtn" title="切换主题">🌙 暗色</button>
+    <div class="ws-badge">
+      <div class="ws-dot" id="wsDot"></div>
+      <span id="wsStatus">就绪</span>
+    </div>
   </div>
 </header>
 
 <div class="input-bar">
-  <input id="queryInput" type="text" placeholder="输入分析问题，例如：帮我分析最近电商行业的热门品类趋势" />
-  <button class="btn btn-primary" id="sendBtn" onclick="sendTask()">▶ 发送新任务</button>
+  <div class="input-wrapper">
+    <input id="queryInput" type="text" placeholder="输入分析问题，例如：帮我分析最近电商行业的热门品类趋势（按 Enter 发送）" autocomplete="off" />
+    <div class="history-dropdown" id="historyDropdown"></div>
+  </div>
+  <button class="btn btn-primary" id="sendBtn" onclick="sendTask()">▶ 发送任务</button>
   <button class="btn btn-ghost" onclick="closeAllSessions()">清除全部</button>
 </div>
 
@@ -192,95 +217,188 @@
 
 <div class="main-area">
   <div class="log-panel">
+    <!-- 步骤追踪器 -->
+    <div class="step-tracker" id="stepTracker" style="display:none;"></div>
     <div class="log-scroll" id="logArea"></div>
   </div>
-  <div class="file-panel">
-    <div class="file-panel-header">
-      <span>生成的报告</span>
-      <button class="btn btn-ghost" onclick="refreshFiles()" style="padding:3px 9px;font-size:10px;">刷新</button>
+  
+  <!-- 拖拽分割线 -->
+  <div class="resizer" id="resizer"></div>
+  
+  <div class="file-panel" id="filePanel">
+    <div class="file-panel-header" style="flex-direction:column; align-items:stretch;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span>生成的报告</span>
+        <button class="btn btn-ghost" onclick="refreshFiles()" style="padding:4px 10px;font-size:11px;">刷新</button>
+      </div>
+      <input type="text" class="file-search" id="fileSearch" placeholder="搜索报告文件名..." oninput="renderFiles()" />
     </div>
     <div class="file-list" id="fileList"></div>
   </div>
 </div>
 
+<!-- Markdown 预览弹窗 -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span id="previewTitle">预览</span>
+      <button class="btn btn-ghost" onclick="closePreview()" style="padding:4px 10px;">✕ 关闭</button>
+    </div>
+    <div class="modal-body" id="previewBody"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
 <script>
-// ── 会话管理 ──
-const sessions = {};    // { threadId: { id, query, logs[], ws, dir, status, element } }
+// ── 初始化主题 ──
+const currentTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', currentTheme);
+document.getElementById('themeBtn').textContent = currentTheme === 'dark' ? '🌙 暗色' : '☀️ 亮色';
+
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '🌙 暗色' : '☀️ 亮色';
+}
+
+// ── 全局变量 ──
+const sessions = {};
 let activeSessionId = null;
+let allFiles = [];
 let fileRefreshTimer = null;
 
 const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
 
 const tagMap = {
-  session_created: { dot:'s', tag:'s', text:'会话' },
-  assistant_call:  { dot:'a', tag:'a', text:'调度' },
-  tool_start:      { dot:'t', tag:'t', text:'工具' },
-  task_result:     { dot:'r', tag:'r', text:'完成' },
-  error:           { dot:'e', tag:'e', text:'错误' },
+  session_created: { cls:'s', text:'会话' },
+  assistant_call:  { cls:'a', text:'调度' },
+  tool_start:      { cls:'t', text:'工具' },
+  task_result:     { cls:'r', text:'完成' },
+  error:           { cls:'e', text:'错误' },
 };
 
+// 步骤状态映射
+const stepList = [
+  { key: 'session_created', label: '创建会话' },
+  { key: 'assistant_call', label: '调度 Agent' },
+  { key: 'tool_start', label: '执行工具' },
+  { key: 'task_result', label: '生成报告' }
+];
+
+// ── Toast 工具 ──
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+// ── 历史记录 ──
+let historyQueries = JSON.parse(localStorage.getItem('historyQueries') || '[]');
+const inputEl = document.getElementById('queryInput');
+const dropdownEl = document.getElementById('historyDropdown');
+
+inputEl.addEventListener('focus', () => {
+  if(historyQueries.length > 0) {
+    dropdownEl.innerHTML = historyQueries.map(q => `<div class="history-item" onclick="selectHistory('${escapeAttr(q)}')">${escapeHtml(q)}</div>`).join('');
+    dropdownEl.style.display = 'block';
+  }
+});
+inputEl.addEventListener('blur', () => { setTimeout(() => dropdownEl.style.display = 'none', 150); });
+
+function selectHistory(q) {
+  inputEl.value = q;
+  dropdownEl.style.display = 'none';
+}
+
+function addHistory(q) {
+  historyQueries = [q, ...historyQueries.filter(i => i !== q)].slice(0, 8);
+  localStorage.setItem('historyQueries', JSON.stringify(historyQueries));
+}
+
+// ── 会话管理 ──
 function createSession(threadId, query) {
   const session = {
-    id: threadId,
-    query,
-    logs: [],
-    ws: null,
-    dir: null,
-    status: 'running', // running | done | error
-    el: null,
+    id: threadId, query, logs: [], ws: null, status: 'running', el: null,
+    steps: stepList.map(s => ({ ...s, status: 'wait' }))
   };
   sessions[threadId] = session;
 
-  // 连 WebSocket
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url = `${proto}//${location.host}/ws/${threadId}`;
-  const ws = new WebSocket(url);
-  ws.onopen = () => { updateWSStatus(); };
+  const ws = new WebSocket(`${proto}//${location.host}/ws/${threadId}`);
+  
+  ws.onopen = () => updateWSStatus();
   ws.onmessage = (e) => {
     try {
       const d = JSON.parse(e.data);
       if (d.type === 'pong') return;
-      if (d.type !== 'monitor_event') return;
+      // 兼容处理：只要带 event 字段就接收
+      if (!d.event) return;
 
-      session.logs.push({ event: d.event, message: d.message, data: d.data, timestamp: d.timestamp });
-      if (d.event === 'session_created' && d.data?.path) {
-        session.dir = d.data.path;
-        scheduleFileRefresh();
+      const currentSession = sessions[threadId];
+      if (!currentSession) return;
+
+      currentSession.logs.push({ event: d.event, message: d.message, data: d.data, timestamp: d.timestamp || new Date().toISOString() });
+      
+      // 更新步骤状态
+      let stepChanged = false;
+      if (d.event === 'session_created') { currentSession.steps[0].status = 'done'; currentSession.steps[1].status = 'active'; stepChanged = true; }
+      if (d.event === 'assistant_call') { currentSession.steps[1].status = 'done'; currentSession.steps[2].status = 'active'; stepChanged = true; }
+      if (d.event === 'tool_start') { currentSession.steps[2].status = 'active'; stepChanged = true; }
+      if (d.event === 'task_result') { 
+        currentSession.status = 'done'; 
+        currentSession.steps.forEach(s => s.status = 'done'); 
+        stepChanged = true; 
+        scheduleFileRefresh(); 
       }
-      if (d.event === 'task_result') { session.status = 'done'; scheduleFileRefresh(); }
-      if (d.event === 'error') { session.status = 'error'; }
+      if (d.event === 'error') { 
+        currentSession.status = 'error'; 
+        const activeStep = currentSession.steps.find(s => s.status === 'active');
+        if (activeStep) activeStep.status = 'error';
+        stepChanged = true; 
+      }
 
       renderTabs();
-      if (activeSessionId === threadId) renderLog(session);
-    } catch (_) {}
+      if (activeSessionId === threadId) {
+        if (stepChanged) renderSteps(currentSession);
+        // 增量追加日志，避免全量重绘闪烁
+        const area = $('#logArea');
+        const isNearBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 100;
+        area.insertAdjacentHTML('beforeend', buildLogHTML(currentSession.logs[currentSession.logs.length-1]));
+        if (isNearBottom) area.scrollTop = area.scrollHeight;
+      }
+    } catch (err) { console.error('WS Message Error:', err); }
   };
+  
   ws.onclose = () => {
-    if (session.status === 'running') session.status = 'done';
+    if (sessions[threadId] && sessions[threadId].status === 'running') {
+      sessions[threadId].status = 'done';
+      renderTabs();
+    }
     updateWSStatus();
-    renderTabs();
   };
-  ws.onerror = () => { session.status = 'error'; updateWSStatus(); renderTabs(); };
   session.ws = ws;
 
-  // 切换到此会话
   switchSession(threadId);
   renderTabs();
-  scheduleFileRefresh();
 }
 
 function switchSession(threadId) {
   if (activeSessionId && sessions[activeSessionId]) {
-    // 保存滚动位置
-    const area = $('#logArea');
-    sessions[activeSessionId]._scrollTop = area.scrollTop;
+    sessions[activeSessionId]._scrollTop = $('#logArea').scrollTop;
   }
   activeSessionId = threadId;
   const s = sessions[threadId];
   if (!s) { renderLog(null); return; }
+  
+  renderSteps(s);
   renderLog(s);
-  // 恢复滚动位置
-  $('#logArea').scrollTop = s._scrollTop || 0;
+  
+  $('#logArea').scrollTop = s._scrollTop || $('#logArea').scrollHeight;
   renderTabs();
   refreshFiles();
 }
@@ -293,29 +411,25 @@ function closeSession(threadId) {
 
   if (activeSessionId === threadId) {
     const ids = Object.keys(sessions);
-    if (ids.length > 0) {
-      switchSession(ids[ids.length - 1]); // 切到最新的
-    } else {
-      activeSessionId = null;
-      renderLog(null);
-    }
+    if (ids.length > 0) switchSession(ids[ids.length - 1]);
+    else { activeSessionId = null; renderLog(null); renderSteps(null); }
   }
   renderTabs();
   updateWSStatus();
 }
 
 function closeAllSessions() {
-  Object.keys(sessions).forEach(id => {
-    if (sessions[id].ws) sessions[id].ws.close();
-  });
+  if(!confirm('确定要清除全部会话记录吗？')) return;
+  Object.keys(sessions).forEach(id => { if (sessions[id].ws) sessions[id].ws.close(); });
   Object.keys(sessions).forEach(id => delete sessions[id]);
   activeSessionId = null;
   renderLog(null);
+  renderSteps(null);
   renderTabs();
   updateWSStatus();
 }
 
-// ── 标签栏渲染 ──
+// ── UI 渲染 ──
 function renderTabs() {
   const bar = $('#tabBar');
   const ids = Object.keys(sessions);
@@ -324,61 +438,124 @@ function renderTabs() {
   bar.innerHTML = ids.map(id => {
     const s = sessions[id];
     const active = id === activeSessionId ? ' active' : '';
-    const statusIcon = s.status === 'running' ? '⏳' : s.status === 'error' ? '❌' : '✅';
+    
+    // 动态 Tab 状态
+    let statusEl = '';
+    if (s.status === 'running') {
+      const activeStep = s.steps.find(st => st.status === 'active') || s.steps[0];
+      statusEl = `<span class="tab-progress"><div class="spinner"></div> ${activeStep.label}</span>`;
+    } else if (s.status === 'error') {
+      statusEl = `<span class="tab-progress" style="color:var(--red)">❌ 失败</span>`;
+    } else {
+      statusEl = `<span class="tab-progress" style="color:var(--green)">✅ 完成</span>`;
+    }
+
     return `<div class="tab${active}" onclick="switchSession('${id}')">
-      <span class="tab-status ${s.status}">${statusIcon}</span>
-      <span class="tab-query" title="${escapeAttr(s.query)}">${escapeHtml(s.query.substring(0, 20))}${s.query.length > 20 ? '...' : ''}</span>
+      <span class="tab-query" title="${escapeAttr(s.query)}">${escapeHtml(s.query.substring(0, 15))}${s.query.length > 15 ? '...' : ''}</span>
+      ${statusEl}
       <span class="tab-close" onclick="event.stopPropagation();closeSession('${id}')">×</span>
     </div>`;
   }).join('');
 }
 
-// ── 日志渲染 ──
-function renderLog(session) {
-  const area = $('#logArea');
-  if (!session || session.logs.length === 0) {
-    area.innerHTML = `<div class="empty-state"><div class="icon">📋</div><div>${session ? '等待 Agent 响应...' : '发送一个任务开始调试'}</div></div>`;
-    return;
-  }
-  area.innerHTML = session.logs.map(l => {
-    const t = tagMap[l.event] || tagMap.tool_start;
-    const resultBlock = l.data?.result
-      ? `<div class="log-result-block">${escapeHtml(l.data.result.substring(0, 800))}${l.data.result.length > 800 ? '…' : ''}</div>`
-      : '';
-    return `<div class="log-entry">
-      <div class="log-dot ${t.dot}"></div>
-      <div class="log-body">
-        <span class="log-tag ${t.tag}">${t.text}</span>
-        <span class="log-msg">${escapeHtml(l.message)}</span>
-        ${resultBlock}
-        <div class="log-time">${fmtTime(l.timestamp)}</div>
-      </div>
+function renderSteps(session) {
+  const tracker = $('#stepTracker');
+  if (!session || session.logs.length === 0) { tracker.style.display = 'none'; return; }
+  tracker.style.display = 'flex';
+
+  tracker.innerHTML = session.steps.map(step => {
+    let icon = '⏸️', cls = 'wait';
+    if (step.status === 'done') { icon = '✓'; cls = 'done'; }
+    if (step.status === 'active') { icon = '⏳'; cls = 'active'; }
+    if (step.status === 'error') { icon = '✕'; cls = 'error'; }
+    
+    return `<div class="step-item ${cls}">
+      <div class="step-icon">${icon}</div>
+      <span>${step.label}</span>
     </div>`;
   }).join('');
 }
 
+function renderLog(session) {
+  const area = $('#logArea');
+  if (!session || session.logs.length === 0) {
+    area.innerHTML = `<div class="empty-state">
+      <div class="icon">📋</div>
+      <div>${session ? '等待 Agent 响应...' : '发送一个任务开始调试'}</div>
+    </div>`;
+    return;
+  }
+  area.innerHTML = session.logs.map(l => buildLogHTML(l)).join('');
+}
+
+function buildLogHTML(log) {
+  const t = tagMap[log.event] || tagMap.tool_start;
+  
+  // 折叠面板处理
+  let resultBlock = '';
+  if (log.data && log.data.result) {
+    const resultText = log.data.result;
+    resultBlock = `
+      <details class="log-details">
+        <summary class="log-summary">查看执行结果 <span>▼</span></summary>
+        <div class="log-result-content">${escapeHtml(resultText)}</div>
+      </details>
+    `;
+  }
+
+  const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('zh-CN',{hour12:false}) : '';
+
+  return `<div class="log-entry">
+    <div class="log-body">
+      <div class="log-header">
+        <span class="log-tag ${t.cls}">${t.text}</span>
+        <span class="log-msg">${escapeHtml(log.message)}</span>
+        <span class="log-time">${timeStr}</span>
+      </div>
+      ${resultBlock}
+    </div>
+  </div>`;
+}
+
 // ── 发送任务 ──
 async function sendTask() {
-  const input = $('#queryInput');
-  const query = input.value.trim();
+  const query = inputEl.value.trim();
   if (!query) return;
+
+  addHistory(query);
+  inputEl.value = '';
+  inputEl.blur();
 
   const btn = $('#sendBtn');
   btn.disabled = true; btn.textContent = '发送中...';
+  let threadId = null;
 
   try {
+    threadId = crypto.randomUUID();
+    createSession(threadId, query); // 先建WS连接
+    const ws = sessions[threadId].ws;
+    
+    // 等待 WS 连接成功后再发 POST
+    await new Promise((resolve, reject) => {
+      if (ws.readyState === WebSocket.OPEN) return resolve();
+      if (ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) return reject(new Error('WebSocket 连接失败'));
+      ws.addEventListener('open', resolve, { once: true });
+      ws.addEventListener('error', () => reject(new Error('WebSocket 连接失败')), { once: true });
+    });
+
     const res = await fetch('/api/task', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, thread_id: threadId }),
     });
-    const data = await res.json();
-    createSession(data.thread_id, query);
+    if (!res.ok) throw new Error(`任务请求失败 (${res.status})`);
+    
+    showToast('任务已下发', 'success');
   } catch (err) {
-    alert('请求失败: ' + err.message);
+    if (threadId && sessions[threadId]) closeSession(threadId);
+    showToast(err.message, 'error');
   } finally {
-    btn.disabled = false; btn.textContent = '▶ 发送新任务';
-    input.value = '';
-    input.focus();
+    btn.disabled = false; btn.textContent = '▶ 发送任务';
+    inputEl.focus();
   }
 }
 
@@ -392,77 +569,136 @@ function updateWSStatus() {
   txt.textContent = ids.length === 0 ? '就绪' : `${ids.length} 个会话${hasActive ? ' · 已连接' : ''}`;
 }
 
-// ── 文件浏览 ──
+// ── 文件浏览 & 搜索 ──
 function scheduleFileRefresh() {
   if (fileRefreshTimer) clearTimeout(fileRefreshTimer);
-  fileRefreshTimer = setTimeout(refreshFiles, 3000);
+  fileRefreshTimer = setTimeout(refreshFiles, 2000);
 }
 
 async function refreshFiles() {
-  const list = $('#fileList');
   try {
     const res = await fetch('/api/files');
     const d = await res.json();
-    if (d.error || !d.files || d.files.length === 0) {
-      list.innerHTML = `<div class="empty-state"><div class="icon">📂</div><div>还未生成文件</div></div>`;
-      return;
-    }
-    // 优先显示当前活跃会话的文件
-    const currentDir = activeSessionId ? `session_${activeSessionId}` : null;
-    let files = d.files;
-    // 按文件夹分组
-    const groups = {};
-    files.forEach(f => {
-      const parts = f.path.replace(/\\/g, '/').split('/');
-      const idx = parts.findIndex(p => p.startsWith('session_'));
-      const grp = idx >= 0 ? parts[idx] : '其他';
-      if (!groups[grp]) groups[grp] = [];
-      groups[grp].push(f);
-    });
-    // 当前会话排前面
-    const sorted = Object.entries(groups).sort((a,b) => {
-      if (a[0] === currentDir) return -1;
-      if (b[0] === currentDir) return 1;
-      return b[0].localeCompare(a[0]);
-    });
-
-    let html = '';
-    sorted.forEach(([grp, fs]) => {
-      const isActive = grp === currentDir;
-      html += `<div style="font-size:10px;color:var(--text-dim);padding:6px 10px 2px;letter-spacing:.5px;${isActive ? 'color:var(--accent);' : ''}">${isActive ? '▸ ' : ''}${grp}</div>`;
-      fs.forEach(f => html += `
-        <div class="file-item">
-          <div class="file-icon">${iconFor(f.name)}</div>
-          <div class="file-info">
-            <div class="file-name" title="${escapeAttr(f.name)}">${escapeHtml(f.name)}</div>
-            <div class="file-meta">${fmtSize(f.size)} · ${new Date(f.mtime*1000).toLocaleString('zh-CN')}</div>
-          </div>
-          <button class="btn btn-primary" onclick="event.stopPropagation();downloadFile('${encodeURIComponent(f.path)}')">下载</button>
-        </div>`);
-    });
-    list.innerHTML = html;
-  } catch (_) {}
+    allFiles = d.files || [];
+    renderFiles();
+  } catch (err) { console.error(err); }
 }
+
+function renderFiles() {
+  const list = $('#fileList');
+  const searchKey = $('#fileSearch').value.toLowerCase().trim();
+  
+  if (allFiles.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="font-size:12px; padding:20px;">还未生成文件</div>`;
+    return;
+  }
+
+  const currentDir = activeSessionId ? `session_${activeSessionId}` : null;
+  const groups = {};
+  
+  allFiles.forEach(f => {
+    if (searchKey && !f.name.toLowerCase().includes(searchKey)) return;
+    const parts = f.path.replace(/\\/g, '/').split('/');
+    const idx = parts.findIndex(p => p.startsWith('session_'));
+    const grp = idx >= 0 ? parts[idx] : '其他';
+    if (!groups[grp]) groups[grp] = [];
+    groups[grp].push(f);
+  });
+
+  const sorted = Object.entries(groups).sort((a,b) => {
+    if (a[0] === currentDir) return -1;
+    if (b[0] === currentDir) return 1;
+    return b[0].localeCompare(a[0]);
+  });
+
+  let html = '';
+  if (sorted.length === 0) {
+    html = `<div class="empty-state" style="font-size:12px; padding:20px;">未找到匹配的文件</div>`;
+  } else {
+    sorted.forEach(([grp, fs]) => {
+      html += `<div class="file-group-title"><span>📁</span> ${grp}</div>`;
+      fs.forEach(f => {
+        html += `
+          <div class="file-item" onclick="previewFile('${encodeURIComponent(f.path)}', '${escapeAttr(f.name)}')">
+            <div class="file-icon">${iconFor(f.name)}</div>
+            <div class="file-info">
+              <div class="file-name" title="${escapeAttr(f.name)}">${escapeHtml(f.name)}</div>
+              <div class="file-meta">${fmtSize(f.size)}</div>
+            </div>
+            <button class="btn btn-primary" style="padding:4px 10px;font-size:11px;" onclick="event.stopPropagation();downloadFile('${encodeURIComponent(f.path)}')">下载</button>
+          </div>`;
+      });
+    });
+  }
+  list.innerHTML = html;
+}
+
+// Markdown 预览
+async function previewFile(encodedPath, filename) {
+  if (!filename.endsWith('.md')) {
+    showToast('暂不支持该格式预览，请直接下载', 'error');
+    return;
+  }
+  
+  const modal = $('#previewModal');
+  const title = $('#previewTitle');
+  const body = $('#previewBody');
+  
+  title.textContent = filename;
+  body.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-dim);">加载中...</div>';
+  modal.style.display = 'flex';
+
+  try {
+    const res = await fetch(`/api/download?path=${encodedPath}`);
+    const text = await res.text();
+    // 使用 marked 渲染 md
+    body.innerHTML = marked.parse(text);
+  } catch (err) {
+    body.innerHTML = `<span style="color:var(--red)">预览失败，请下载文件查看。</span>`;
+  }
+}
+function closePreview() { $('#previewModal').style.display = 'none'; }
+
+// ── 侧边栏拖拽 ──
+const resizer = document.getElementById('resizer');
+const filePanel = document.getElementById('filePanel');
+let isDragging = false;
+
+resizer.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  resizer.classList.add('is-dragging');
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const newWidth = window.innerWidth - e.clientX;
+  if (newWidth > 220 && newWidth < 600) {
+    filePanel.style.width = `${newWidth}px`;
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+  resizer.classList.remove('is-dragging');
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+});
 
 // ── 工具函数 ──
 function escapeHtml(s) { if (!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escapeAttr(s) { if (!s) return ''; return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function fmtTime(iso) { try { return new Date(iso).toLocaleTimeString('zh-CN',{hour12:false}); } catch(_) { return ''; } }
-function fmtSize(b) {
-  if (!b) return '0 B';
-  const u = ['B','KB','MB','GB']; let i = 0;
-  while (b >= 1024 && i < 3) { b /= 1024; i++; }
-  return b.toFixed(i > 0 ? 1 : 0) + ' ' + u[i];
-}
+function fmtSize(b) { if (!b) return '0 B'; const u = ['B','KB','MB','GB']; let i=0; while(b>=1024&&i<3){b/=1024;i++;} return b.toFixed(i>0?1:0)+' '+u[i]; }
 function iconFor(n) { if (n.endsWith('.md')) return '📝'; if (n.endsWith('.pdf')) return '📄'; return '📎'; }
-function downloadFile(p) { window.open(`/api/download?path=${encodeURIComponent(p)}`,'_blank'); }
+function downloadFile(p) { window.open(`/api/download?path=${p}`,'_blank'); }
 
-// ── 键盘 ──
-$('#queryInput').addEventListener('keydown', e => {
+// ── 键盘快捷键 ──
+inputEl.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTask(); }
 });
 
-// ── 初始 ──
+// 初始
 updateWSStatus();
 refreshFiles();
 </script>
