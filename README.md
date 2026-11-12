@@ -1,303 +1,94 @@
-<p align="center">
-  <h1 align="center">🤖 MultiAgent-Search</h1>
-  <p align="center"><b>轻量级多智能体协作系统 —— AI Agent 开发入门实战项目</b></p>
-  <p align="center">
-    <img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python">
-    <img src="https://img.shields.io/badge/FastAPI-0.129-green.svg" alt="FastAPI">
-    <img src="https://img.shields.io/badge/LangGraph-1.0-orange.svg" alt="LangGraph">
-    <img src="https://img.shields.io/badge/deepagents-0.4-purple.svg" alt="deepagents">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
-    <img src="https://img.shields.io/badge/适合-学习练手-brightgreen.svg" alt="learning">
-  </p>
-</p>
 
 ---
 
-## 🎯 这是什么
+# 🤖 基于多 Agent 协作的行业与公司研究助手
 
-一个 **不到 1000 行代码** 的 AI Agent 学习项目。用最精简的方式展示如何基于 LangChain 生态构建**多智能体协作系统** — 一个"主智能体"像团队负责人一样调度三个"子智能体"（网络搜索、数据库查询、知识库检索）协同完成复杂任务。
+> **项目简介**：一个基于 LangChain 框架构建的智能投研助手。通过编排“外部检索、财务数据库、私有知识库”三大专业子 Agent，打破信息孤岛，实现从“一句话指令”到“多源信息交叉验证”再到“全自动输出行研报告（Markdown/PDF）”的完整闭环。
 
-**如果你是这样的人，这项目就是为你准备的 👇**
+## 📍 1. 项目背景与痛点
 
-- 正在学 LangChain / LangGraph，想找一个**完整、能跑**的实战项目
-- 对"多智能体编排"感兴趣，但不想一上来就看复杂的 AutoGPT / CrewAI 源码
-- 想理解 **FastAPI + WebSocket + Agent** 怎么组合成一个真实可用的系统
-- 面试前需要一个 AI Agent 项目充实简历，并且能讲清楚每个设计决策
+在行业研究与公司初筛场景中，分析师通常面临三个痛点：
+1. **信息搜集耗时**：需要在巨潮资讯、财经媒体中大海捞针，耗费数小时。
+2. **数据整合繁琐**：新闻资讯（非结构化）与财报数据（结构化）分离，需要人工比对。
+3. **输出格式不统一**：难以严格遵循机构内部的“行研 SOP”输出标准报告。
 
----
+本项目旨在打造一个**数字实习生**，将繁琐的信息搬运、SQL 查询与框架套用自动化，让分析师将精力集中在最终的价值判断上。
 
-## 🏗️ 架构
+## 🎥 2. 演示与效果预览
 
-### 整体架构图
+> *(这里留给你插入视频和截图)*
+> *   **📺 视频演示**：*(建议用 ScreenToGif 或 B站录制一段 2 分钟的视频，展示：输入指令 ➔ 观察左侧 Agent 思考与工具调用日志 ➔ 右侧文件面板刷出并下载报告)*
+[![行业研究助手演示demo](这里填你的封面图片链接)](https://www.bilibili.com/video/BV1VeWX6PEWf/?vd_source=9f68ea1d0f97b2bcf7ee99aca55df09e)
 
-```mermaid
-graph TD
-    U[👤 用户浏览器] -->|POST /api/task| S[FastAPI Server]
-    U <-->|WebSocket /ws/:id| S
-    S -->|asyncio.create_task| MA[主智能体 Orchestrator]
-    MA -->|调度| SA1[子智能体 1<br/>网络搜索]
-    MA -->|调度| SA2[子智能体 2<br/>数据库查询]
-    MA -->|调度| SA3[子智能体 3<br/>RAG知识库]
-    SA1 -->|Tavily API| W[🌐 互联网]
-    SA2 -->|MySQL| D[(数据库)]
-    SA3 -->|RAGFlow SDK| R[📚 知识库]
-    MA -->|生成| MD[Markdown 报告]
-    MD -->|转换| PDF[PDF 文件]
-    S -->|实时推送进度| U
+> *   **📸 界面截图**：
+>     *(插入图 1：左侧展示 Agent 按顺序调用了 `internet_search`、`execute_sql_query` 和 `create_ask_delete`)*
+>     *(插入图 2：右侧文件面板生成了漂亮的 PDF 报告)*
 
-    style MA fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    style SA1 fill:#fff3e0,stroke:#f57c00
-    style SA2 fill:#e8f5e9,stroke:#388e3c
-    style SA3 fill:#fce4ec,stroke:#c62828
-```
+## ✨ 3. 核心功能
 
-### 请求流程图
+*   🌐 **联网情报收集**：接入 Tavily Search，基于 5 个不同维度（公司/行业/竞品/资本/风险）进行多轮搜索，并自动标注信息来源可信度。
+*   🗄️ **精准财务查询 (Text-to-SQL)**：封装 MySQL 查询工具，Agent 可自主探查表结构（`list_sql_tables`）并执行 SQL，获取精确到小数点的营收与利润数据。
+*   📚 **私有框架对齐**：接入 RAGFlow SDK，Agent 能够动态创建会话查询企业内部行研 SOP，并严格按 SOP 结构组织报告。
+*   ⚖️ **冲突事实交叉验证**：主 Agent 具备交叉比对纪律。若新闻检索（定性）与财报数据（定量）存在冲突（如“新闻唱多但净利下滑”），系统会并列呈现双方来源。
+*   📄 **全流程文档生成**：支持 Markdown 生成，并调用底层 Word 引擎自动转换为标准排版的 PDF。
 
-```mermaid
-sequenceDiagram
-    participant U as 用户
-    participant S as Server (FastAPI)
-    participant M as Monitor (WebSocket)
-    participant A as 主智能体
-    participant T1 as 子智能体 (搜索)
-    participant T2 as 子智能体 (数据库)
+## 🏗️ 4. 系统架构设计
 
-    U->>S: POST /api/task {query}
-    S->>S: 生成 thread_id
-    S-->>U: {status:"started", thread_id}
-    S->>A: asyncio.create_task(agent)
+*(💡 强烈建议你在 Draw.io 画一个简单的架构图贴在这里)*
 
-    U->>M: WebSocket 连接 /ws/{thread_id}
+系统采用 **“1 个主控 Agent + 3 个异构子 Agent + 1 套文档生成工具链”** 的架构：
 
-    A->>M: "正在分析需求..."
-    M-->>U: 实时推送
+*   **主 Agent (Orchestrator)**：负责需求拆解、任务分发、冲突信息校验，并调度文件生成工具。
+*   **子 Agent 1 - 公开信息检索**：使用 `tavily_tool` 获取外部市场情报。
+*   **子 Agent 2 - 财务数据助手**：使用 `db_tools` 直连 MySQL 执行 SQL。
+*   **子 Agent 3 - 研究框架助手**：使用 `ragflow_tools` 调用 RAGFlow 知识库。
+*   **工具链**：`markdown_tools` 与 `pdf_tools` 负责文件的本地落盘与格式转换。
 
-    A->>T1: "搜索最新AI动态"
-    T1->>M: "调用网络搜索工具..."
-    M-->>U: 实时推送
-    T1-->>A: 搜索结果
+## 🛠️ 5. 技术栈
 
-    A->>T2: "查询历史数据"
-    T2->>M: "执行SQL查询..."
-    M-->>U: 实时推送
-    T2-->>A: 查询结果
+*   **大模型**：例如 DeepSeek-V3 / GPT-4o
+*   **Agent 编排**：LangChain (Tool Calling, Prompt Engineering)
+*   **数据交互**：MySQL (PyMySQL)、Tavily Search API
+*   **知识库**：RAGFlow SDK
+*   **Web 交互**：FastAPI + WebSocket（提供流式日志与实时文件状态刷新）
+*   **前端**：原生 HTML/JS/CSS（支持暗黑模式与 Markdown 实时预览）
 
-    A->>M: "正在生成Markdown报告..."
-    M-->>U: 实时推送
-    A-->>S: 任务完成
-    M-->>U: "✅ 报告已生成"
-```
+## 🧠 6. 核心设计取舍与难点攻克
 
-### 数据流
 
-1. 用户 `POST /api/task` 发自然语言请求
-2. 主智能体分析需求，决定调用哪些子智能体
-3. 子智能体各司其职 — 搜网络 / 查数据库 / 翻知识库
-4. 主智能体汇总信息，生成 Markdown 报告（可转 PDF）
-5. 全过程经 WebSocket 实时推送前端
+1.  **难点：大模型“偷懒”只输出文字，不调用工具生成文件。**
+    *   **解法**：在 Prompt 中设定【强制指令】，将“文件生成”与“文字反馈”的触发条件严格隔离。同时，在 `markdown_tools` 中重写了底层的路径清洗逻辑（`resolve_path`），强制文件写入 `session_dir`，避免大模型生成绝对路径导致的安全风险。
+2.  **难点：多源信息存在幻觉或冲突。**
+    *   **解法**：一是在子 Agent 层面引入“反幻觉纪律”（如查不到必须明说，不许瞎猜）；二是在主 Agent 层面设定了事实核查机制，强制对齐多源信息。
+3.  **难点：LLM 不按企业内部标准生成报告。**
+    *   **解法**：引入 RAG Agent 作为“框架指导者”，在生成报告前，先向 RAGFlow 询问 SOP 结构。Prompt 强制要求“必须严格按照研究框架助手提供的结构组织正文”。
+4.  **难点：网络请求不稳定导致 Agent 中断。**
+    *   **解法**：在 `tavily_tool` 外部封装了 `retry_with_backoff`（指数退避重试），保证网络抖动时的鲁棒性。
 
----
+## 🚀 7. 快速开始
 
-## 🚀 快速开始
+1.  **环境准备**：Python 3.10+，确保本地或云端有可用的 MySQL 服务。
+2.  **安装依赖**：
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  **配置环境变量**：复制 `.env.example` 并重命名为 `.env`，填入相关密钥：
+    ```env
+    TAVILY_API_KEY=你的Tavily密钥
+    MYSQL_HOST=localhost
+    MYSQL_USER=root
+    MYSQL_PASSWORD=你的数据库密码
+    MYSQL_DATABASE=finance_db
+    RAGFLOW_API_KEY=你的RAGFlow密钥
+    RAGFLOW_BASE_URL=你的RAGFlow地址
+    ```
+4.  **初始化财务数据**：运行 `python init_mysql.py` 自动建表并导入测试财务数据。
+5.  **启动服务**：运行主程序（例如 `python main.py`），在浏览器访问 `http://localhost:8000`。
 
-### 环境要求
+## 🔮 8. 未来迭代方向
 
-- **Python 3.10+**
-- OpenAI 兼容的 LLM API Key（DeepSeek / 通义千问 / OpenAI 均可）
-- Tavily API Key（[免费注册](https://tavily.com)，每月 1000 次）
-
-> 📌 数据库和 RAGFlow 是可选的，不配也能跑 — 主智能体会自动跳过没有的服务。
-
-### 1. 克隆并安装
-
-```bash
-git clone https://github.com/你的用户名/MultiAgent-Search.git
-cd MultiAgent-Search
-pip install -r requirements.txt
-```
-
-### 2. 配置环境变量
-
-```bash
-cp .env.example .env
-```
-
-编辑 `.env`，最少填 3 个：
-
-```env
-OPENAI_BASE_URL=https://api.deepseek.com/v1
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx
-LLM_QWEN_MAX=deepseek-chat
-TAVILY_API_KEY=tvly-xxxxxxxxxxxxxxxx
-```
-
-### 3. 启动
-
-```bash
-python api/server.py
-```
-
-打开浏览器访问 `http://localhost:8000` — 内置调试页面，支持多会话标签页。
-
-或者访问 `http://localhost:8000/docs` 用 Swagger 直接调 API。
-
-### 4. 试一试
-
-```bash
-curl -X POST http://localhost:8000/api/task \
-  -H "Content-Type: application/json" \
-  -d '{"query": "搜索最近AI Agent领域的最新进展"}'
-```
-
-WebSocket 实时进度：`ws://localhost:8000/ws/{返回的 thread_id}`
-
-### 🎬 Demo
-
-<!-- TODO: 替换为你的 Demo GIF -->
-![Demo](docs/demo.gif)
+*   **引入 Critic Agent (独立评审员)**：将事实核查从主 Agent 剥离，使用独立的模型对子 Agent 返回的数据进行“打分”，低于阈值自动回退重试。
+*   **增加记忆机制 (Memory)**：支持多轮对话上下文，例如用户接着问“把刚才报告里的风险部分展开说说”。
+*   **支持 MCP 协议**：将现有工具重构为 MCP Server，实现与更多本地开发环境（如 Cursor/Claude Desktop）的无缝集成。
 
 ---
-
-## 📖 你能学到什么
-
-| 知识点 | 项目中的体现 |
-|--------|------------|
-| **Orchestrator 多智能体模式** | `agent/main_agent.py` — 主智能体调度 3 个子智能体 |
-| **Prompt Engineering** | `prompt/prompts.yml` — system_prompt 约束 Agent 行为 |
-| **LangChain @tool 自定义工具** | `tools/` — 8 个工具函数的完整写法 |
-| **FastAPI 异步后台任务** | `api/server.py` — `asyncio.create_task` 非阻塞执行 |
-| **WebSocket 实时推送** | `api/monitor.py` — 工具调用进度实时推前端 |
-| **ContextVar 协程隔离** | `api/context.py` — 多用户并发数据不串台 |
-| **文件操作安全** | `utils/path_utils.py` — 12 种路径场景防护 |
-| **RAG 知识库对接** | `tools/ragflow_tools.py` — RAGFlow SDK 实战 |
-| **NL2SQL 自然语言查库** | `tools/db_tools.py` — Agent 自动写 SQL 执行 |
-| **对话持久化** | `agent/main_agent.py` — SqliteSaver checkpointer |
-
----
-
-## 📁 项目结构
-
-```
-MultiAgent-Search/
-│
-├── agent/                          # 🤖 智能体层（核心）
-│   ├── llm.py                      # 模型初始化（10 行）
-│   ├── prompts.py                  # YAML 提示词加载器
-│   ├── main_agent.py               # ★ 主智能体 + 异步执行引擎
-│   └── subagents/
-│       ├── network_search_agent.py # 网络搜索子智能体
-│       ├── database_query_agent.py # 数据库查询子智能体
-│       └── knowledge_base_agent.py # 知识库子智能体
-│
-├── api/                            # 🌐 Web 接口层
-│   ├── server.py                   # FastAPI 入口 + 路由
-│   ├── context.py                  # ContextVar 协程隔离
-│   ├── monitor.py                  # WebSocket 连接池 + 埋点监控
-│   └── static/
-│       └── index.html              # 前端调试页面
-│
-├── tools/                          # 🔧 工具函数（8 个 @tool）
-│   ├── tavily_tool.py              # 网络搜索（含超时重试）
-│   ├── db_tools.py                 # 数据库查询三件套
-│   ├── ragflow_tools.py            # RAGFlow 知识库检索
-│   ├── markdown_tools.py           # 生成 Markdown
-│   ├── pdf_tools.py                # Markdown → PDF
-│   └── upload_file_read_tool.py    # 读取上传文件
-│
-├── utils/                          # 🛠 工具层
-│   ├── path_utils.py               # 路径安全解析
-│   ├── retry.py                    # 指数退避重试装饰器
-│   └── word_converter.py           # Word COM 引擎
-│
-├── prompt/
-│   └── prompts.yml                 # 提示词配置
-│
-├── data/
-│   └── checkpoints.db              # SQLite 对话持久化
-│
-├── requirements.txt                # 依赖清单（版本锁定）
-├── .env.example                    # 环境变量模板
-├── LICENSE                         # MIT License
-└── README.md
-```
-
----
-
-## 📖 推荐阅读顺序
-
-| 顺序 | 文件 | 重点 |
-|------|------|------|
-| 1️⃣ | `agent/llm.py` | LLM 怎么初始化的（10 行） |
-| 2️⃣ | `prompt/prompts.yml` | system_prompt 怎么写、怎么约束 Agent |
-| 3️⃣ | `agent/subagents/network_search_agent.py` | 最简单的子智能体，理解"子智能体 = 字典配置" |
-| 4️⃣ | `tools/tavily_tool.py` | 完整 @tool 写法，埋点怎么做 |
-| 5️⃣ | `agent/main_agent.py` | **核心** — 主智能体怎么 orchestrate、怎么流式执行 |
-| 6️⃣ | `api/server.py` | FastAPI 怎么和 Agent 结合，异步任务怎么触发 |
-| 7️⃣ | `api/monitor.py` | WebSocket 实时推送，事件循环归属判断 |
-| 8️⃣ | `api/context.py` | ContextVar 为什么比全局变量好 |
-| 9️⃣ | `utils/path_utils.py` | Agent 文件安全 — 边界场景大全 |
-
----
-
-## 🧪 练手建议
-
-项目的设计刻意保持简洁，给你留了很多动手空间：
-
-### 入门级（加深理解）
-
-- [ ] **换个模型**：把 DeepSeek 换成通义千问或 GPT，改 `.env` 一行
-- [ ] **加一个子智能体**：比如"天气查询助手"，体验加子智能体要改多少行代码
-- [ ] **改 system_prompt**：把"电商运营分析"换成你自己的业务场景
-
-### 进阶级（工程能力）
-
-- [ ] **加反思机制**：让子智能体执行完后再自我检查，提高准确性
-- [ ] **加 JWT 认证**：给 `/api/task` 加上登录校验
-- [ ] **给子智能体加通信**：让数据库和搜索子智能体互相交换信息
-
-### 挑战级（深入学习）
-
-- [ ] **WeasyPrint 替代 Word COM**：摆脱 Windows 依赖，Linux 也能跑 PDF 转换
-- [ ] **人工审批节点**：敏感操作需用户确认才执行（LangGraph interrupt）
-- [ ] **Docker 化**：写 Dockerfile + docker-compose，一键启动
-
----
-
-## 🔧 技术栈
-
-| 层级 | 技术 | 说明 |
-|------|------|------|
-| Agent 框架 | deepagents (LangChain 官方) | 多智能体编排 |
-| 图编排 | LangGraph + SqliteSaver | 状态图 + 对话持久化 |
-| LLM 接入 | LangChain + OpenAI 兼容协议 | 一套代码适配多种模型 |
-| Web 框架 | FastAPI + Uvicorn | 异步 HTTP + 原生 WebSocket |
-| 搜索引擎 | Tavily API | AI 专用搜索，免费额度 |
-| 知识库 | RAGFlow | 开源 RAG 引擎 |
-| 数据库 | MySQL | Agent 自动写 SQL |
-| 文档生成 | markdown + WeasyPrint | MD 生成 + PDF 转换 |
-
----
-
-## ❓ FAQ
-
-### Q: 为什么选 deepagents？
-
-**A:** 自己写编排要处理状态管理、tool_call 路由、流式输出、错误恢复等一堆事。`deepagents` 封装好了，你只需定义子智能体的 name / description / tools，框架帮你调度。先理解"用框架能做什么"，再看源码"框架怎么做的"。
-
-### Q: 没有 RAGFlow 和 MySQL 能跑吗？
-
-**A:** 能。主智能体会自动判断可用服务并跳过，只配 LLM + Tavily 就能体验完整链路。这就是刻意设计的"优雅降级"。
-
-### Q: 为什么用 ContextVar 而不是全局变量？
-
-**A:** FastAPI 下多个请求跑在同一线程的不同协程里。用全局变量的话，用户 A 的数据会被用户 B 覆盖（串台）。ContextVar 是 asyncio 原生支持的协程级变量，每个请求链路互不干扰。
-
-### Q: 项目为什么不到 1000 行？
-
-**A:** 故意的。学习项目，不是生产项目。每个模块只做一件事，代码少才容易看懂。把这 1000 行读明白，多智能体 Agent 的核心概念就掌握了。
-
----
-
-## 📄 License
-
-MIT License — 随意使用、修改、分发。基于本项目做了有趣的东西，欢迎提 PR 😄
